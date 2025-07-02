@@ -1,32 +1,48 @@
-// lib/services/user_profile_service.dart
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_profile.dart';
 
 class UserProfileService extends ChangeNotifier {
   UserProfile _userProfile;
 
-  UserProfileService({required String initialEmail, String? initialName})
-      : _userProfile = UserProfile(
-    name: initialName ?? initialEmail.split('@')[0],
+  UserProfileService({
+    required String initialEmail,
+    required String initialName,
+    String? initialProfilePictureUrl,
+    DateTime? initialJoinDate,
+  }) : _userProfile = UserProfile(
     email: initialEmail,
-    profilePictureUrl: null,
-    joinDate: DateTime.now(), // Inisialisasi tanggal bergabung
+    name: initialName,
+    profilePictureUrl: initialProfilePictureUrl,
+    joinDate: initialJoinDate ?? DateTime.now(),
   );
 
+  // Getter
   UserProfile get userProfile => _userProfile;
 
-  void updateProfile({String? name, String? email, String? profilePictureUrl, DateTime? joinDate}) {
-    _userProfile = _userProfile.copyWith(
-      name: name,
-      email: email,
-      profilePictureUrl: profilePictureUrl,
-      joinDate: joinDate,
-    );
+  String get email => _userProfile.email;
+  String get name => _userProfile.name;
+  String? get profilePictureUrl => _userProfile.profilePictureUrl;
+  DateTime get joinDate => _userProfile.joinDate;
+
+  // Setter Methods
+  void updateProfile({String? name, String? email}) {
+    if (name != null) _userProfile.name = name;
+    if (email != null) _userProfile.email = email;
     notifyListeners();
   }
 
   void updateProfilePicture(String? newUrl) {
-    _userProfile = _userProfile.copyWith(profilePictureUrl: newUrl);
+    _userProfile.profilePictureUrl = newUrl;
+    notifyListeners();
+  }
+
+  void setEmail(String email) {
+    _userProfile.email = email;
+    notifyListeners();
+  }
+
+  void setName(String name) {
+    _userProfile.name = name;
     notifyListeners();
   }
 }
