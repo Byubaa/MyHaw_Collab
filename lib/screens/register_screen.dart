@@ -1,47 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:myapp/screens/register_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart';
 
-import '../services/user_profile_service.dart';
-import 'home_screen.dart';
-
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String? _errorMessage;
+  String? _error;
 
-  void _login() async {
+  void _register() async {
     if (_formKey.currentState!.validate()) {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
 
       try {
-        final response = await Supabase.instance.client.auth
-            .signInWithPassword(email: email, password: password);
+        await Supabase.instance.client.auth.signUp(
+          email: email,
+          password: password,
+        );
 
-        if (response.user != null && mounted) {
-          final profile = context.read<UserProfileService>();
-          profile.setEmail(email);
-          profile.setName(email.split('@')[0]);
+        if (!mounted) return;
 
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registrasi berhasil. Silakan login.')),
+        );
+
+        Navigator.pop(context);
       } catch (e) {
         if (mounted) {
           setState(() {
-            _errorMessage = 'Gagal login: ${e.toString()}';
+            _error = e.toString();
           });
         }
       }
@@ -53,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
+          // Background gradient biru ala DANA
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -66,16 +61,15 @@ class _LoginScreenState extends State<LoginScreen> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Icon(Icons.phone_android, size: 100, color: Colors.white),
+                  const Icon(Icons.person_add, size: 100, color: Colors.white),
                   const SizedBox(height: 16),
                   const Text(
-                    'Selamat Datang',
+                    'Buat Akun Baru',
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -84,11 +78,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
-                          color: Color.fromARGB(25, 0, 0, 0),
+                          color: Colors.black.withAlpha(25),
                           blurRadius: 10,
-                          offset: Offset(0, 4),
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
@@ -96,11 +90,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       key: _formKey,
                       child: Column(
                         children: [
-                          if (_errorMessage != null)
+                          if (_error != null)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.only(bottom: 12),
                               child: Text(
-                                _errorMessage!,
+                                _error!,
                                 style: const TextStyle(color: Colors.red),
                               ),
                             ),
@@ -111,15 +105,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               prefixIcon: Icon(Icons.email),
                               border: OutlineInputBorder(),
                             ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Masukkan email';
-                              }
-                              if (!value.contains('@')) {
-                                return 'Email tidak valid';
-                              }
-                              return null;
-                            },
+                            validator: (value) =>
+                            (value == null || !value.contains('@'))
+                                ? 'Email tidak valid'
+                                : null,
                           ),
                           const SizedBox(height: 16),
                           TextFormField(
@@ -130,12 +119,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               prefixIcon: Icon(Icons.lock),
                               border: OutlineInputBorder(),
                             ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Masukkan password';
-                              }
-                              return null;
-                            },
+                            validator: (value) =>
+                            (value == null || value.length < 6)
+                                ? 'Minimal 6 karakter'
+                                : null,
                           ),
                           const SizedBox(height: 24),
                           SizedBox(
@@ -143,27 +130,24 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF007BFF),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              onPressed: _login,
+                              onPressed: _register,
                               child: const Text(
-                                'Masuk',
-                                style: TextStyle(fontSize: 16, color: Colors.white),
+                                'Daftar',
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.white),
                               ),
                             ),
                           ),
                           TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                              );
-                            },
+                            onPressed: () => Navigator.pop(context),
                             child: const Text(
-                              'Belum punya akun? Daftar',
+                              'Sudah punya akun? Masuk',
                             ),
                           ),
                         ],
