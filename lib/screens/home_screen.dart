@@ -1,14 +1,7 @@
-// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/foundation.dart' show kIsWeb; // Import kIsWeb
-
-// Import dart:io HANYA jika bukan web.
-// JIKA ANDA TIDAK MENGGUNAKAN UNTUK WEB, HAPUS SAJA 'if (!kIsWeb)'
-// Tapi untuk cross-platform, ini lebih aman.
-import 'dart:io' show File; // Import File dari dart:io secara eksplisit
-// dan hanya jika bukan web.
-
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show File;
 import '../services/home_screen_service.dart';
 import '../services/user_profile_service.dart';
 import '../screens/saldo_screen.dart';
@@ -111,22 +104,20 @@ class _HomeContentState extends State<_HomeContent> {
 
         ImageProvider<Object>? profileImageProvider;
         if (user.profilePictureUrl != null && user.profilePictureUrl!.isNotEmpty) {
-          // Selalu coba sebagai NetworkImage terlebih dahulu,
-          // karena NetworkImage bisa menangani URL jaringan DAN blob: URL dari image_picker di web
+
           if (user.profilePictureUrl!.startsWith('http://') || user.profilePictureUrl!.startsWith('https://') || kIsWeb) {
             profileImageProvider = NetworkImage(user.profilePictureUrl!);
           } else {
-            // Jika bukan web dan bukan URL jaringan, asumsikan ini adalah path file lokal
-            // Pastikan import 'dart:io' ada di awal file
+
             try {
               final File imageFile = File(user.profilePictureUrl!);
               if (imageFile.existsSync()) {
                 profileImageProvider = FileImage(imageFile);
               } else {
-                profileImageProvider = null; // Fallback jika file tidak ditemukan
+                profileImageProvider = null;
               }
             } catch (e) {
-              // Tangani error jika path tidak valid atau ada masalah File
+
               profileImageProvider = null;
               debugPrint('Error loading local file image: $e');
             }
