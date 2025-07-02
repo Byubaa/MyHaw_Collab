@@ -1,25 +1,14 @@
-// lib/screens/profil_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart' show kIsWeb; // Import kIsWeb
-
-// Import dart:io HANYA jika bukan web
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show File;
-
 import '../services/user_profile_service.dart';
 import '../models/user_profile.dart';
 import 'login_screen.dart';
 
 class ProfilScreen extends StatelessWidget {
   const ProfilScreen({super.key});
-
-  final String _staticPhoneNumber = '083845103335';
-
-  String _formatDate(DateTime date) {
-    return DateFormat('dd MMMM yyyy').format(date); // Format tanggal
-  }
 
   Future<void> _pickImage(BuildContext context, UserProfileService service, ImageSource source) async {
     final ImagePicker picker = ImagePicker();
@@ -35,7 +24,6 @@ class ProfilScreen extends StatelessWidget {
         const SnackBar(content: Text('Tidak ada foto yang dipilih.')),
       );
     }
-    // Tidak perlu Navigator.pop(context) di sini karena _showChangePhotoOptions akan menutup bottom sheet
   }
 
   void _showEditNameDialog(BuildContext context, UserProfileService service, String currentValue) {
@@ -88,11 +76,6 @@ class ProfilScreen extends StatelessWidget {
                 onTap: () => _pickImage(context, service, ImageSource.gallery),
               ),
               ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Ambil Foto Baru'),
-                onTap: () => _pickImage(context, service, ImageSource.camera),
-              ),
-              ListTile(
                 leading: const Icon(Icons.delete),
                 title: const Text('Hapus Foto Profil'),
                 onTap: () {
@@ -118,16 +101,14 @@ class ProfilScreen extends StatelessWidget {
         ImageProvider<Object>? profileImageProvider;
         if (user.profilePictureUrl != null && user.profilePictureUrl!.isNotEmpty) {
           if (user.profilePictureUrl!.startsWith('http://') || user.profilePictureUrl!.startsWith('https://') || kIsWeb) {
-            // Ini adalah URL jaringan atau di web (termasuk blob: URL dari image_picker di web)
             profileImageProvider = NetworkImage(user.profilePictureUrl!);
           } else {
-            // Jika bukan web dan bukan URL jaringan, asumsikan ini adalah path file lokal
             try {
               final File imageFile = File(user.profilePictureUrl!);
               if (imageFile.existsSync()) {
                 profileImageProvider = FileImage(imageFile);
               } else {
-                profileImageProvider = null; // Fallback jika file tidak ditemukan
+                profileImageProvider = null;
               }
             } catch (e) {
               profileImageProvider = null;
@@ -190,18 +171,6 @@ class ProfilScreen extends StatelessWidget {
                           leading: const Icon(Icons.email_outlined, color: Colors.blue),
                           title: const Text('Email', style: TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text(user.email),
-                        ),
-                        const Divider(indent: 16, endIndent: 16),
-                        ListTile(
-                          leading: const Icon(Icons.phone, color: Colors.blue),
-                          title: const Text('Nomor Telepon', style: TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(_staticPhoneNumber),
-                        ),
-                        const Divider(indent: 16, endIndent: 16),
-                        ListTile(
-                          leading: const Icon(Icons.date_range, color: Colors.blue),
-                          title: const Text('Tanggal Bergabung', style: TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(_formatDate(user.joinDate)),
                         ),
                       ],
                     ),
