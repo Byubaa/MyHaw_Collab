@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:myapp/screens/bantuan_screen.dart';
+import 'package:myapp/screens/bantuan_screen.dart'; // dari branch try
 import 'package:provider/provider.dart' as provider;
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // Tambahkan ini
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // dari branch try
+
 import 'screens/login_screen.dart';
 import 'services/home_screen_service.dart';
 import 'services/user_profile_service.dart';
@@ -17,8 +18,6 @@ void main() async {
     url: 'https://cjzuefviqlrdnbzhhnmm.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqenVlZnZpcWxyZG5iemhobm1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyOTkwNTEsImV4cCI6MjA2NTg3NTA1MX0.6Si01-85KV6A8lVeZqgLcOKAmoGj6DpxhbYyYa9PtE8',
   );
-
-  await dotenv.load(fileName: ".env");
 
   runApp(const MyApp());
 }
@@ -49,7 +48,7 @@ class MyApp extends StatelessWidget {
         home: const LoginScreen(),
         routes: {
           '/register': (_) => const LoginScreen(),
-          '/chat': (_) => const BantuanScreen(), // ✅ Tambahkan ini
+          '/chat': (_) => const BantuanScreen(), // ✅ Tambahan dari branch try
         },
       ),
     );
