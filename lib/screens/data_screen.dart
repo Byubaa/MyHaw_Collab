@@ -63,19 +63,19 @@ void _inputNomorHP(BuildContext context, Provider provider, double nominal) {
           onPressed: () {
             String nomorHp = _nomorHpController.text;
             if (nomorHp.isEmpty) {
-              // Jika nomor kosong
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Nomor HP tidak boleh kosong')),
               );
             } else if (nomorHp.length < 12) {
-              // Jika nomor kurang dari 12 angka
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Nomor HP minimal 12 angka')),
               );
             } else {
-              // Jika valid, proses pembelian
+
               beliData(nominal, provider.name, nomorHp);
-              Navigator.pop(context); // Close input dialog
+              Navigator.pop(context);
               _showPurchaseConfirmation(context, nominal, nomorHp, provider.name);
             }
           },

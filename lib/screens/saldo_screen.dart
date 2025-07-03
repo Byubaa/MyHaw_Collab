@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 
 class SaldoScreen extends StatelessWidget {
   final Function(double) tambahSaldo;
-  final double currentAccountBalance; // Parameter untuk saldo saat ini
+  final double currentAccountBalance;
 
-  // **PERBAIKAN UTAMA DI SINI: Konstruktor menerima 2 positional arguments**
   SaldoScreen(this.tambahSaldo, this.currentAccountBalance, {super.key});
 
   final TextEditingController _saldoController = TextEditingController();
@@ -58,7 +57,6 @@ class SaldoScreen extends StatelessWidget {
         actions: [
           ElevatedButton(
             onPressed: () {
-              // Kembali ke root, menutup semua dialog/layar di atasnya
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
             style: ElevatedButton.styleFrom(
@@ -191,7 +189,7 @@ class SaldoScreen extends StatelessWidget {
                           style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                         ),
                         Text(
-                          _formatCurrency(currentAccountBalance), // Menampilkan saldo dari parameter
+                          _formatCurrency(currentAccountBalance),
                           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue),
                         ),
                       ],

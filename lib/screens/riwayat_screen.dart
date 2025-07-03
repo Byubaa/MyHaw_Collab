@@ -15,6 +15,7 @@ class RiwayatScreen extends StatelessWidget {
         itemCount: riwayatTransaksi.length,
         itemBuilder: (context, index) {
           return ListTile(
+            leading: const Icon(Icons.receipt_long),
             title: Text(riwayatTransaksi[index]),
           );
         },

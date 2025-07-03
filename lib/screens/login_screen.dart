@@ -1,8 +1,10 @@
-// lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
+import 'package:myapp/screens/register_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
-import 'home_screen.dart';
+
 import '../services/user_profile_service.dart';
+import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,37 +17,33 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-
-  final String dummyEmail = 'hawianugrah@gmail.com';
-  final String dummyPassword = '123';
-
   String? _errorMessage;
 
-  void _login() {
+  void _login() async {
     if (_formKey.currentState!.validate()) {
-      final email = _emailController.text;
-      final password = _passwordController.text;
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
 
-      if (email == dummyEmail && password == dummyPassword) {
-        final String defaultName = email.split('@')[0];
+      try {
+        final response = await Supabase.instance.client.auth
+            .signInWithPassword(email: email, password: password);
 
-        // Ini akan menyediakan UserProfileService baru setiap kali login
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChangeNotifierProvider(
-              create: (context) => UserProfileService(
-                initialEmail: email,
-                initialName: defaultName,
-              ),
-              child: const HomeScreen(),
-            ),
-          ),
-        );
-      } else {
-        setState(() {
-          _errorMessage = 'Email atau password salah';
-        });
+        if (response.user != null && mounted) {
+          final profile = context.read<UserProfileService>();
+          profile.setEmail(email);
+          profile.setName(email.split('@')[0]);
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Gagal login: ${e.toString()}';
+          });
+        }
       }
     }
   }
@@ -53,16 +51,12 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ... (kode UI login Anda, tidak ada perubahan di sini)
       body: Stack(
         children: [
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF00A9FF),
-                  Color(0xFF007BFF),
-                ],
+                colors: [Color(0xFF00A9FF), Color(0xFF007BFF)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -74,11 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.phone_android,
-                    size: 100,
-                    color: Colors.white,
-                  ),
+                  const Icon(Icons.phone_android, size: 100, color: Colors.white),
                   const SizedBox(height: 16),
                   const Text(
                     'Selamat Datang',
@@ -96,10 +86,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: const [
                         BoxShadow(
-                          color: Colors.black,
+                          color: Color.fromARGB(25, 0, 0, 0),
                           blurRadius: 10,
                           offset: Offset(0, 4),
-                        )
+                        ),
                       ],
                     ),
                     child: Form(
@@ -107,11 +97,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         children: [
                           if (_errorMessage != null)
-                            Text(
-                              _errorMessage!,
-                              style: const TextStyle(color: Colors.red),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                _errorMessage!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
                             ),
-                          const SizedBox(height: 8),
                           TextFormField(
                             controller: _emailController,
                             decoration: const InputDecoration(
@@ -145,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 24),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
@@ -163,20 +155,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
                           TextButton(
                             onPressed: () {
-                              // Tambahkan aksi lupa password jika diperlukan
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                              );
                             },
                             child: const Text(
-                              'Lupa Password?',
-                              style: TextStyle(color: Colors.grey),
+                              'Belum punya akun? Daftar',
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            "Belum punya akun? Daftar",
-                            style: TextStyle(color: Colors.black54),
                           ),
                         ],
                       ),

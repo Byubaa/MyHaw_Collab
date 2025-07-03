@@ -6,14 +6,12 @@ class HomeService {
   double totalPengeluaran = 0.0;
   List<String> riwayatTransaksi = [];
 
-  // Callback yang akan dipanggil saat saldo berubah
-  // `VoidCallback` adalah alias untuk `void Function()`. Tanda '?' membuatnya nullable.
   VoidCallback? onSaldoChanged;
 
   void tambahSaldo(double jumlah) {
     saldo += jumlah;
     riwayatTransaksi.add('Isi saldo Rp${jumlah.toStringAsFixed(0)}');
-    // Panggil callback jika tidak null
+
     onSaldoChanged?.call();
   }
 
@@ -23,7 +21,7 @@ class HomeService {
       penghasilan += nominal + 2000;
       totalPengeluaran += nominal;
       riwayatTransaksi.add('Pembelian pulsa Rp${nominal.toStringAsFixed(0)} untuk $nomorHP di $provider');
-      onSaldoChanged?.call(); // Panggil callback
+      onSaldoChanged?.call();
       _showDialog(context, 'Pembelian Pulsa Berhasil', 'Pulsa Rp${nominal.toStringAsFixed(0)} telah berhasil dikirim ke nomor $nomorHP.');
     } else {
       _showSnackbar(context, 'Saldo tidak mencukupi');
@@ -36,7 +34,7 @@ class HomeService {
       penghasilan += nominal + 3000;
       totalPengeluaran += nominal;
       riwayatTransaksi.add('Pembelian data Rp${nominal.toStringAsFixed(0)} untuk $nomorHP di $provider');
-      onSaldoChanged?.call(); // Panggil callback
+      onSaldoChanged?.call();
       _showDialog(context, 'Pembelian Data Berhasil', 'Paket data Rp${nominal.toStringAsFixed(0)} telah berhasil dikirim ke nomor $nomorHP.');
     } else {
       _showSnackbar(context, 'Saldo tidak mencukupi');
