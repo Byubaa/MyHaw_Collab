@@ -48,7 +48,7 @@ class MyApp extends StatelessWidget {
         home: const LoginScreen(),
         routes: {
           '/register': (_) => const LoginScreen(),
-          '/chat': (_) => const BantuanScreen(), // ✅ Tambahan dari branch try
+          '/chat': (_) => const BantuanScreen(), // ✅ Tambahan dari try
         },
       ),
     );
