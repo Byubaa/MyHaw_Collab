@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 class PembukuanScreen extends StatefulWidget {
-  final double pemasukan; // Total pemasukan
-  final double pengeluaran; // Total pengeluaran
-  final List<String> riwayatIsiSaldo; // Referensi ke riwayat transaksi (langsung dari HomeService)
+  final double pemasukan;
+  final double pengeluaran;
+  final List<String> riwayatIsiSaldo;
 
-  const PembukuanScreen({super.key, 
+  const PembukuanScreen({
+    super.key,
     required this.pemasukan,
     required this.pengeluaran,
     required this.riwayatIsiSaldo,
@@ -20,30 +21,26 @@ class PembukuanScreenState extends State<PembukuanScreen> {
 
   double get keuntungan => widget.pemasukan - widget.pengeluaran;
 
-  // Fungsi untuk menambah riwayat baru secara manual
   void _addRiwayat(String isiSaldo) {
     setState(() {
-      widget.riwayatIsiSaldo.add(isiSaldo); // Tambahkan ke sumber data
-    });
-    Navigator.of(context).pop(); // Tutup dialog
-  }
-
-  // Fungsi untuk mengedit riwayat
-  void _editRiwayat(int index, String updatedSaldo) {
-    setState(() {
-      widget.riwayatIsiSaldo[index] = updatedSaldo; // Perbarui langsung di sumber data
+      widget.riwayatIsiSaldo.add(isiSaldo);
     });
     Navigator.of(context).pop();
   }
 
-  // Fungsi untuk menghapus riwayat
+  void _editRiwayat(int index, String updatedSaldo) {
+    setState(() {
+      widget.riwayatIsiSaldo[index] = updatedSaldo;
+    });
+    Navigator.of(context).pop();
+  }
+
   void _deleteRiwayat(int index) {
     setState(() {
-      widget.riwayatIsiSaldo.removeAt(index); // Hapus langsung di sumber data
+      widget.riwayatIsiSaldo.removeAt(index);
     });
   }
 
-  // Dialog untuk menambah atau mengedit riwayat
   void _showInputDialog({int? index}) {
     if (index != null) {
       _textController.text = widget.riwayatIsiSaldo[index];
@@ -66,10 +63,12 @@ class PembukuanScreenState extends State<PembukuanScreen> {
           ),
           TextButton(
             onPressed: () {
-              if (index == null) {
-                _addRiwayat(_textController.text); // Tambah riwayat baru
-              } else {
-                _editRiwayat(index, _textController.text); // Edit riwayat
+              if (_textController.text.isNotEmpty) {
+                if (index == null) {
+                  _addRiwayat(_textController.text);
+                } else {
+                  _editRiwayat(index, _textController.text);
+                }
               }
             },
             child: Text(index == null ? 'Tambah' : 'Simpan'),
@@ -139,7 +138,7 @@ class PembukuanScreenState extends State<PembukuanScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.add, color: Colors.blue),
-                  onPressed: () => _showInputDialog(), // Tombol Create
+                  onPressed: () => _showInputDialog(),
                 ),
               ],
             ),
@@ -156,11 +155,11 @@ class PembukuanScreenState extends State<PembukuanScreen> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.edit, color: Colors.orange),
-                          onPressed: () => _showInputDialog(index: index), // Tombol Edit
+                          onPressed: () => _showInputDialog(index: index),
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _deleteRiwayat(index), // Tombol Delete
+                          onPressed: () => _deleteRiwayat(index),
                         ),
                       ],
                     ),

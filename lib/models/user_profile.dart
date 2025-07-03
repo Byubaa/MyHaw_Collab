@@ -1,22 +1,21 @@
-// lib/models/user_profile.dart
 class UserProfile {
   String name;
   String email;
-  String? profilePictureUrl; // Bisa null jika belum ada foto profil
-  DateTime joinDate; // Tambahkan properti tanggal bergabung
+  String? profilePictureUrl;
+  DateTime joinDate;
 
   UserProfile({
     required this.name,
     required this.email,
     this.profilePictureUrl,
-    required this.joinDate, // Wajib diisi
+    required this.joinDate,
   });
 
   UserProfile copyWith({
     String? name,
     String? email,
     String? profilePictureUrl,
-    DateTime? joinDate, // Tambahkan di copyWith
+    DateTime? joinDate,
   }) {
     return UserProfile(
       name: name ?? this.name,

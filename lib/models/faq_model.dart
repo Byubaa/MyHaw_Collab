@@ -4,7 +4,6 @@ class FAQModel {
 
   FAQModel({required this.question, required this.answer});
 
-  // Contoh data FAQ sebagai fungsi statis
   static List<FAQModel> getFAQList() {
     return [
       FAQModel(

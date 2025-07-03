@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:myapp/screens/bantuan_screen.dart'; // dari branch try
 import 'package:provider/provider.dart' as provider;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // dari branch try
+
 import 'screens/login_screen.dart';
 import 'services/home_screen_service.dart';
 import 'services/user_profile_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Muat file .env yang berisi GEMINI_API_KEY
+  await dotenv.load(fileName: ".env");
 
   await Supabase.initialize(
     url: 'https://cjzuefviqlrdnbzhhnmm.supabase.co',
@@ -41,7 +47,8 @@ class MyApp extends StatelessWidget {
         ),
         home: const LoginScreen(),
         routes: {
-          '/register': (_) => const LoginScreen(), // Kalau kamu pakai register
+          '/register': (_) => const LoginScreen(),
+          '/chat': (_) => const BantuanScreen(), // ✅ Tambahan dari try
         },
       ),
     );
