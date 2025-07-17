@@ -1,87 +1,163 @@
+// lib/screens/profil_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show File;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/user_profile_service.dart';
 import '../models/user_profile.dart';
 import 'login_screen.dart';
 
-class ProfilScreen extends StatelessWidget {
+class ProfilScreen extends StatefulWidget {
   const ProfilScreen({super.key});
 
-  Future<void> _pickImage(BuildContext context, UserProfileService service, ImageSource source) async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: source);
+  @override
+  State<ProfilScreen> createState() => _ProfilScreenState();
+}
 
-    if (image != null) {
-      service.updateProfilePicture(image.path);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Foto profil berhasil diubah dari ${source == ImageSource.gallery ? "galeri" : "kamera"}!')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+class _ProfilScreenState extends State<ProfilScreen> {
+
+  Future<void> _pickAndUploadImage(UserProfileService service, ImageSource source) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: source, imageQuality: 50, maxWidth: 800);
+
+    if (image == null) {
+      scaffoldMessenger.showSnackBar(
         const SnackBar(content: Text('Tidak ada foto yang dipilih.')),
+      );
+      return;
+    }
+
+    try {
+      final bytes = await image.readAsBytes();
+      final fileExt = image.path.split('.').last;
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final filePath = '$userId/$fileName';
+
+      await Supabase.instance.client.storage.from('avatars').uploadBinary(
+        filePath,
+        bytes,
+        fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+      );
+
+      final imageUrl = Supabase.instance.client.storage.from('avatars').getPublicUrl(filePath);
+
+      // ✅ MENGGUNAKAN UPSERT, BUKAN UPDATE
+      // Ini akan membuat profil jika belum ada, atau memperbaruinya jika sudah ada.
+      await Supabase.instance.client.from('profiles').upsert({
+        'id': userId,
+        'avatar_url': imageUrl,
+        'username': service.userProfile.name // Pastikan username juga tersimpan
+      });
+
+      service.updateProfilePicture(imageUrl);
+
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(content: Text('Foto profil berhasil diubah!')),
+      );
+
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Gagal mengunggah foto: ${e.toString()}')),
       );
     }
   }
 
-  void _showEditNameDialog(BuildContext context, UserProfileService service, String currentValue) {
+  void _showEditNameDialog(UserProfileService service, String currentValue) {
     final TextEditingController controller = TextEditingController(text: currentValue);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Nama Lengkap'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Nama Lengkap',
-            border: OutlineInputBorder(),
+      builder: (dialogContext) {
+        final navigator = Navigator.of(dialogContext);
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+        return AlertDialog(
+          title: const Text('Edit Nama Lengkap'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'Nama Lengkap',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.text,
           ),
-          keyboardType: TextInputType.text,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                service.updateProfile(name: controller.text);
-                Navigator.pop(context);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Nama tidak boleh kosong!')),
-                );
-              }
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => navigator.pop(),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (controller.text.isNotEmpty) {
+                  final userId = Supabase.instance.client.auth.currentUser!.id;
+
+                  // ✅ MENGGUNAKAN UPSERT DI SINI JUGA
+                  await Supabase.instance.client.from('profiles').upsert({
+                    'id': userId,
+                    'username': controller.text,
+                  });
+
+                  service.updateProfile(name: controller.text);
+                  navigator.pop();
+                } else {
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(content: Text('Nama tidak boleh kosong!')),
+                  );
+                }
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  void _showChangePhotoOptions(BuildContext context, UserProfileService service) {
+  void _showChangePhotoOptions(UserProfileService service) {
     showModalBottomSheet(
       context: context,
-      builder: (context) {
+      builder: (bottomSheetContext) {
+        final navigator = Navigator.of(bottomSheetContext);
+
         return SafeArea(
           child: Wrap(
             children: <Widget>[
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: const Text('Pilih dari Galeri'),
-                onTap: () => _pickImage(context, service, ImageSource.gallery),
+                onTap: () {
+                  navigator.pop();
+                  _pickAndUploadImage(service, ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Ambil dari Kamera'),
+                onTap: () {
+                  navigator.pop();
+                  _pickAndUploadImage(service, ImageSource.camera);
+                },
               ),
               ListTile(
                 leading: const Icon(Icons.delete),
                 title: const Text('Hapus Foto Profil'),
-                onTap: () {
-                  Navigator.pop(context); // Tutup bottom sheet
+                onTap: () async {
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                  final userId = Supabase.instance.client.auth.currentUser!.id;
+
+                  await Supabase.instance.client
+                      .from('profiles')
+                      .upsert({'id': userId, 'avatar_url': null});
+
                   service.updateProfilePicture(null);
-                  ScaffoldMessenger.of(context).showSnackBar(
+
+                  navigator.pop();
+                  scaffoldMessenger.showSnackBar(
                       const SnackBar(content: Text('Foto profil dihapus!')));
                 },
               ),
@@ -92,6 +168,7 @@ class ProfilScreen extends StatelessWidget {
     );
   }
 
+  // Widget build tidak ada perubahan
   @override
   Widget build(BuildContext context) {
     return Consumer<UserProfileService>(
@@ -100,18 +177,15 @@ class ProfilScreen extends StatelessWidget {
 
         ImageProvider<Object>? profileImageProvider;
         if (user.profilePictureUrl != null && user.profilePictureUrl!.isNotEmpty) {
-          if (user.profilePictureUrl!.startsWith('http://') || user.profilePictureUrl!.startsWith('https://') || kIsWeb) {
+          if (user.profilePictureUrl!.startsWith('http')) {
             profileImageProvider = NetworkImage(user.profilePictureUrl!);
-          } else {
+          } else if (!kIsWeb) {
             try {
               final File imageFile = File(user.profilePictureUrl!);
               if (imageFile.existsSync()) {
                 profileImageProvider = FileImage(imageFile);
-              } else {
-                profileImageProvider = null;
               }
             } catch (e) {
-              profileImageProvider = null;
               debugPrint('Error loading local file image: $e');
             }
           }
@@ -126,11 +200,11 @@ class ProfilScreen extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: () {
-                    _showChangePhotoOptions(context, userProfileService);
+                    _showChangePhotoOptions(userProfileService);
                   },
                   child: CircleAvatar(
                     radius: 80,
-                    backgroundColor: Colors.blueGrey,
+                    backgroundColor: Colors.blueGrey.shade100,
                     backgroundImage: profileImageProvider,
                     child: profileImageProvider == null
                         ? const Icon(Icons.person, size: 80, color: Colors.white)
@@ -148,9 +222,8 @@ class ProfilScreen extends StatelessWidget {
                   style: const TextStyle(fontSize: 16, color: Colors.grey),
                 ),
                 const SizedBox(height: 30),
-
                 Card(
-                  elevation: 4,
+                  elevation: 2,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                   margin: const EdgeInsets.symmetric(horizontal: 10),
                   child: Padding(
@@ -163,7 +236,7 @@ class ProfilScreen extends StatelessWidget {
                           subtitle: Text(user.name),
                           trailing: const Icon(Icons.edit, color: Colors.grey),
                           onTap: () {
-                            _showEditNameDialog(context, userProfileService, user.name);
+                            _showEditNameDialog(userProfileService, user.name);
                           },
                         ),
                         const Divider(indent: 16, endIndent: 16),
@@ -176,11 +249,13 @@ class ProfilScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pushAndRemoveUntil(
+                  onPressed: () async {
+                    final navigator = Navigator.of(context);
+                    await Supabase.instance.client.auth.signOut();
+
+                    navigator.pushAndRemoveUntil(
                       MaterialPageRoute(builder: (context) => const LoginScreen()),
                           (Route<dynamic> route) => false,
                     );

@@ -117,7 +117,6 @@ class _BantuanScreenState extends State<BantuanScreen> {
     final suggestions = [
       'Cara beli pulsa',
       'Berapa biaya admin?',
-      'Provider apa saja?',
     ];
 
     return Padding(

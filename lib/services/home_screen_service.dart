@@ -1,7 +1,9 @@
+// lib/services/home_screen_service.dart
+
 import 'package:flutter/material.dart';
 
 class HomeService {
-  double saldo = 100000.0;
+  double saldo = 0.0;
   double penghasilan = 0.0;
   double totalPengeluaran = 0.0;
   List<String> riwayatTransaksi = [];
@@ -11,7 +13,6 @@ class HomeService {
   void tambahSaldo(double jumlah) {
     saldo += jumlah;
     riwayatTransaksi.add('Isi saldo Rp${jumlah.toStringAsFixed(0)}');
-
     onSaldoChanged?.call();
   }
 
@@ -22,7 +23,6 @@ class HomeService {
       totalPengeluaran += nominal;
       riwayatTransaksi.add('Pembelian pulsa Rp${nominal.toStringAsFixed(0)} untuk $nomorHP di $provider');
       onSaldoChanged?.call();
-      _showDialog(context, 'Pembelian Pulsa Berhasil', 'Pulsa Rp${nominal.toStringAsFixed(0)} telah berhasil dikirim ke nomor $nomorHP.');
     } else {
       _showSnackbar(context, 'Saldo tidak mencukupi');
     }
@@ -35,27 +35,12 @@ class HomeService {
       totalPengeluaran += nominal;
       riwayatTransaksi.add('Pembelian data Rp${nominal.toStringAsFixed(0)} untuk $nomorHP di $provider');
       onSaldoChanged?.call();
-      _showDialog(context, 'Pembelian Data Berhasil', 'Paket data Rp${nominal.toStringAsFixed(0)} telah berhasil dikirim ke nomor $nomorHP.');
     } else {
       _showSnackbar(context, 'Saldo tidak mencukupi');
     }
   }
 
-  void _showDialog(BuildContext context, String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
+  // Fungsi _showDialog sudah dihapus dari sini
 
   void _showSnackbar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(

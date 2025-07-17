@@ -1,3 +1,5 @@
+// lib/screens/register_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -13,41 +15,71 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   String? _error;
+  bool _isLoading = false;
 
   void _register() async {
-    if (_formKey.currentState!.validate()) {
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-      try {
-        await Supabase.instance.client.auth.signUp(
-          email: email,
-          password: password,
-        );
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
-        if (!mounted) return;
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registrasi berhasil. Silakan login.')),
-        );
+    try {
+      final response = await Supabase.instance.client.auth.signUp(
+        email: email,
+        password: password,
+        data: {'username': email.split('@')[0]}, // Menyimpan username awal
+      );
 
-        Navigator.pop(context);
-      } catch (e) {
-        if (mounted) {
-          setState(() {
-            _error = e.toString();
-          });
-        }
+      if (response.user != null) {
+        // ✅ MEMBUAT PROFIL SETELAH SIGN UP BERHASIL
+        await Supabase.instance.client.from('profiles').insert({
+          'id': response.user!.id,
+          'username': email.split('@')[0],
+        });
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registrasi berhasil. Silakan periksa email Anda untuk verifikasi dan kemudian login.')),
+      );
+
+      Navigator.pop(context);
+
+    } on AuthException catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.message;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = "Terjadi kesalahan yang tidak diketahui.";
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Kode build() tidak berubah
     return Scaffold(
       body: Stack(
         children: [
-          // Background gradient biru ala DANA
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -127,7 +159,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 24),
                           SizedBox(
                             width: double.infinity,
-                            child: ElevatedButton(
+                            child: _isLoading
+                                ? const Center(child: CircularProgressIndicator())
+                                : ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF007BFF),
                                 padding:

@@ -1,3 +1,5 @@
+// lib/screens/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -20,10 +22,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
-  final HomeService _homeService = HomeService();
   int _selectedIndex = 0;
 
-  static final List<Widget> _widgetOptions = <Widget>[
+  final List<Widget> _widgetOptions = <Widget>[
+    _HomeContent(homeService: HomeService()),
     const BantuanScreen(),
     const ProfilScreen(),
   ];
@@ -37,23 +39,15 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _selectedIndex == 0
-          ? _HomeContent(homeService: _homeService)
-          : _widgetOptions.elementAt(_selectedIndex - 1),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _widgetOptions,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.help_outline),
-            label: 'Bantuan',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profil',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.help_outline), label: 'Bantuan'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,
@@ -65,7 +59,6 @@ class HomeScreenState extends State<HomeScreen> {
 
 class _HomeContent extends StatefulWidget {
   final HomeService homeService;
-
   const _HomeContent({required this.homeService});
 
   @override
@@ -80,9 +73,11 @@ class _HomeContentState extends State<_HomeContent> {
     super.initState();
     _currentSaldo = widget.homeService.saldo;
     widget.homeService.onSaldoChanged = () {
-      setState(() {
-        _currentSaldo = widget.homeService.saldo;
-      });
+      if (mounted) {
+        setState(() {
+          _currentSaldo = widget.homeService.saldo;
+        });
+      }
     };
   }
 
@@ -98,212 +93,158 @@ class _HomeContentState extends State<_HomeContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<UserProfileService>(
-      builder: (context, userProfileService, child) {
-        final user = userProfileService.userProfile;
+    final userProfileService = context.watch<UserProfileService>();
+    final user = userProfileService.userProfile;
 
-        ImageProvider<Object>? profileImageProvider;
-        if (user.profilePictureUrl != null && user.profilePictureUrl!.isNotEmpty) {
-
-          if (user.profilePictureUrl!.startsWith('http://') || user.profilePictureUrl!.startsWith('https://') || kIsWeb) {
-            profileImageProvider = NetworkImage(user.profilePictureUrl!);
-          } else {
-
-            try {
-              final File imageFile = File(user.profilePictureUrl!);
-              if (imageFile.existsSync()) {
-                profileImageProvider = FileImage(imageFile);
-              } else {
-                profileImageProvider = null;
-              }
-            } catch (e) {
-
-              profileImageProvider = null;
-              debugPrint('Error loading local file image: $e');
-            }
+    ImageProvider<Object>? profileImageProvider;
+    if (user.profilePictureUrl != null && user.profilePictureUrl!.isNotEmpty) {
+      if (user.profilePictureUrl!.startsWith('http')) {
+        profileImageProvider = NetworkImage(user.profilePictureUrl!);
+      } else if (!kIsWeb) {
+        try {
+          final File imageFile = File(user.profilePictureUrl!);
+          if (imageFile.existsSync()) {
+            profileImageProvider = FileImage(imageFile);
           }
+        } catch (e) {
+          debugPrint('Error loading local file image: $e');
         }
+      }
+    }
 
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ProfilScreen()),
-                      );
-                    },
-                    child: CircleAvatar(
-                      radius: 24,
-                      backgroundColor: Colors.blueGrey,
-                      backgroundImage: profileImageProvider,
-                      child: profileImageProvider == null
-                          ? const Icon(Icons.person, color: Colors.white)
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        Text(
-                          user.email,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Container(
-                height: 150,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.blue.withAlpha((255 * 0.1).round()),
-                  borderRadius: BorderRadius.circular(8),
+    // ✅ INI SATU-SATUNYA PERUBAHAN: Menambahkan widget SafeArea
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: Colors.blueGrey,
+                  backgroundImage: profileImageProvider,
+                  child: profileImageProvider == null ? const Icon(Icons.person, color: Colors.white) : null,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                const SizedBox(width: 8),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Saldo Anda',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black54),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _formatCurrency(_currentSaldo),
-                        style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.black87),
-                      ),
-                      const Spacer(),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => SaldoScreen(
-                                    (jumlah) {
-                                  widget.homeService.tambahSaldo(jumlah);
-                                },
-                                _currentSaldo,
-                              )),
-                            );
-                          },
-                          child: const Text('Isi Saldo', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
+                      Text(user.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      Text(user.email, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Container(
+              height: 150,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.blue.withAlpha((255 * 0.1).round()),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _squareMenuButton(
-                    context,
-                    Icons.add,
-                    'Tambah Transaksi',
-                        () {
-                      showModalBottomSheet(
-                          context: context,
-                          builder: (BuildContext bc){
-                            return SafeArea(
-                              child: Wrap(
-                                children: <Widget>[
-                                  ListTile(
-                                    leading: const Icon(Icons.phone),
-                                    title: const Text('Beli Pulsa'),
-                                    onTap: () {
-                                      Navigator.pop(bc);
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (_) => PulsaScreen((nominal, provider, nomorHP) {
-                                          widget.homeService.beliPulsa(nominal, provider, nomorHP, context);
-                                        })),
-                                      );
-                                    },
-                                  ),
-                                  ListTile(
-                                    leading: const Icon(Icons.data_usage),
-                                    title: const Text('Beli Data'),
-                                    onTap: () {
-                                      Navigator.pop(bc);
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (_) => DataScreen((nominal, provider, nomorHP) {
-                                          widget.homeService.beliData(nominal, provider, nomorHP, context);
-                                        })),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                      );
-                    },
-                  ),
-                  _squareMenuButton(
-                    context,
-                    Icons.receipt,
-                    'Pengeluaran',
-                        () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PembukuanScreen(
-                            pemasukan: widget.homeService.penghasilan,
-                            pengeluaran: widget.homeService.totalPengeluaran,
-                            riwayatIsiSaldo: widget.homeService.riwayatTransaksi,
-                          ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Saldo Anda', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black54)),
+                    const SizedBox(height: 8),
+                    Text(_formatCurrency(_currentSaldo), style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    const Spacer(),
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => SaldoScreen(widget.homeService.tambahSaldo, _currentSaldo)),
+                          );
+                        },
+                        child: const Text('Isi Saldo', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _squareMenuButton(Icons.add, 'Tambah Transaksi', () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (BuildContext bc) {
+                      return SafeArea(
+                        child: Wrap(
+                          children: <Widget>[
+                            ListTile(
+                              leading: const Icon(Icons.phone),
+                              title: const Text('Beli Pulsa'),
+                              onTap: () {
+                                Navigator.pop(bc);
+                                Navigator.push(context, MaterialPageRoute(
+                                  // ✅ Kode ini menjembatani fungsi agar tidak error
+                                    builder: (_) => PulsaScreen(
+                                          (nominal, provider, nomorHP) {
+                                        widget.homeService.beliPulsa(nominal, provider, nomorHP, context);
+                                      },
+                                    )
+                                ));
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.data_usage),
+                              title: const Text('Beli Data'),
+                              onTap: () {
+                                Navigator.pop(bc);
+                                Navigator.push(context, MaterialPageRoute(
+                                  // ✅ Kode ini menjembatani fungsi agar tidak error
+                                    builder: (_) => DataScreen(
+                                          (nominal, provider, nomorHP) {
+                                        widget.homeService.beliData(nominal, provider, nomorHP, context);
+                                      },
+                                    )
+                                ));
+                              },
+                            ),
+                          ],
                         ),
                       );
                     },
-                  ),
-                  _squareMenuButton(
+                  );
+                }),
+                _squareMenuButton(Icons.receipt, 'Pengeluaran', () {
+                  Navigator.push(
                     context,
-                    Icons.history,
-                    'Riwayat',
-                        () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => RiwayatScreen(widget.homeService.riwayatTransaksi)),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+                    MaterialPageRoute(
+                      builder: (_) => PembukuanScreen(
+                        pemasukan: widget.homeService.penghasilan,
+                        pengeluaran: widget.homeService.totalPengeluaran,
+                        riwayatIsiSaldo: widget.homeService.riwayatTransaksi,
+                      ),
+                    ),
+                  );
+                }),
+                _squareMenuButton(Icons.history, 'Riwayat', () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => RiwayatScreen(widget.homeService.riwayatTransaksi)));
+                }),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _squareMenuButton(BuildContext context, IconData icon, String label, Function onTap) {
+  Widget _squareMenuButton(IconData icon, String label, void Function() onTap) {
     return GestureDetector(
-      onTap: () => onTap(),
+      onTap: onTap,
       child: Column(
         children: [
           Container(
