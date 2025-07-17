@@ -1,11 +1,18 @@
+// lib/screens/saldo_screen.dart
+
 import 'package:flutter/material.dart';
 
-class SaldoScreen extends StatelessWidget {
+class SaldoScreen extends StatefulWidget {
   final Function(double) tambahSaldo;
   final double currentAccountBalance;
 
-  SaldoScreen(this.tambahSaldo, this.currentAccountBalance, {super.key});
+  const SaldoScreen(this.tambahSaldo, this.currentAccountBalance, {super.key});
 
+  @override
+  State<SaldoScreen> createState() => _SaldoScreenState();
+}
+
+class _SaldoScreenState extends State<SaldoScreen> {
   final TextEditingController _saldoController = TextEditingController();
 
   final List<double> _quickNominals = [50000, 100000, 200000, 500000];
@@ -40,10 +47,7 @@ class SaldoScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Nominal Ditambahkan:',
-                    style: TextStyle(fontSize: 16, color: Colors.black87),
-                  ),
+                  const Text('Nominal Ditambahkan:', style: TextStyle(fontSize: 16)),
                   Text(
                     _formatCurrency(nominal),
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
@@ -57,7 +61,8 @@ class SaldoScreen extends StatelessWidget {
         actions: [
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
+              Navigator.of(context).pop(); // Tutup dialog
+              Navigator.of(context).pop(); // Kembali ke halaman Home
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
@@ -73,102 +78,66 @@ class SaldoScreen extends StatelessWidget {
   }
 
   void _isiSaldo(BuildContext context, double nominal) {
-    if (nominal >= 10000) {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (context) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Pilih Metode Pembayaran',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 15),
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: const Icon(Icons.wallet, color: Colors.purple),
-                  title: const Text('E-Wallet', style: TextStyle(fontWeight: FontWeight.w500)),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-                  onTap: () {
-                    tambahSaldo(nominal);
-                    Navigator.pop(context); // Tutup bottom sheet
-                    _showPurchaseConfirmation(context, nominal);
-                  },
-                ),
-              ),
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: const Icon(Icons.account_balance, color: Colors.teal),
-                  title: const Text('Bank Transfer', style: TextStyle(fontWeight: FontWeight.w500)),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-                  onTap: () {
-                    tambahSaldo(nominal);
-                    Navigator.pop(context); // Tutup bottom sheet
-                    _showPurchaseConfirmation(context, nominal);
-                  },
-                ),
-              ),
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: const Icon(Icons.qr_code, color: Colors.blue),
-                  title: const Text('QRIS', style: TextStyle(fontWeight: FontWeight.w500)),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-                  onTap: () {
-                    tambahSaldo(nominal);
-                    Navigator.pop(context); // Tutup bottom sheet
-                    _showPurchaseConfirmation(context, nominal);
-                  },
-                ),
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-        ),
-      );
-    } else {
+    if (nominal < 10000) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Nominal minimal adalah ${_formatCurrency(10000)}'),
           backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
         ),
       );
+      return;
     }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Pilih Metode Pembayaran', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 15),
+            _buildPaymentMethodTile(Icons.wallet, 'E-Wallet', nominal),
+            _buildPaymentMethodTile(Icons.account_balance, 'Bank Transfer', nominal),
+            _buildPaymentMethodTile(Icons.qr_code, 'QRIS', nominal),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodTile(IconData icon, String title, double nominal) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.blue),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+        onTap: () {
+          widget.tambahSaldo(nominal);
+          Navigator.pop(context); // Tutup bottom sheet
+          _showPurchaseConfirmation(context, nominal);
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Isi Saldo', style: TextStyle(color: Colors.white)),
-        centerTitle: true,
+        title: const Text('Isi Saldo'),
         backgroundColor: Colors.blue,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -184,13 +153,10 @@ class SaldoScreen extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text('Saldo Anda Saat Ini', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
                         Text(
-                          'Saldo Anda Saat Ini',
-                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                        ),
-                        Text(
-                          _formatCurrency(currentAccountBalance),
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue),
+                          _formatCurrency(widget.currentAccountBalance),
+                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue),
                         ),
                       ],
                     ),
@@ -200,67 +166,63 @@ class SaldoScreen extends StatelessWidget {
             ),
             const SizedBox(height: 30),
 
-            const Text(
-              'Masukkan Nominal',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 15),
+            const Text('Masukkan Nominal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
             TextField(
               controller: _saldoController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: 'Minimal Rp10.000',
-                prefixText: 'Rp',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.blue, width: 2),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: Colors.grey.shade400, width: 1),
-                ),
+                prefixText: 'Rp ',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               style: const TextStyle(fontSize: 18),
             ),
-            const SizedBox(height: 25),
+            const SizedBox(height: 24),
 
-            const Text(
-              'Pilih Nominal Cepat',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 15),
-            Wrap(
-              spacing: 10.0,
-              runSpacing: 10.0,
-              children: _quickNominals.map((nominal) {
-                return ActionChip(
-                  label: Text(_formatCurrency(nominal)),
-                  labelStyle: TextStyle(
-                    color: _saldoController.text == nominal.toStringAsFixed(0) ? Colors.white : Colors.blue,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  backgroundColor: _saldoController.text == nominal.toStringAsFixed(0) ? Colors.blue : Colors.blue.withAlpha(50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(
-                      color: _saldoController.text == nominal.toStringAsFixed(0) ? Colors.blue : Colors.blue.withAlpha(100),
+            const Text('Pilih Nominal Cepat', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _quickNominals.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, // 2 kolom agar lebih besar dan mudah disentuh
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 2.5, // Rasio agar lebih lebar
+              ),
+              itemBuilder: (context, index) {
+                final nominal = _quickNominals[index];
+                return GestureDetector(
+                  onTap: () {
+                    _saldoController.text = nominal.toStringAsFixed(0);
+                    _isiSaldo(context, nominal);
+                  },
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: Colors.blue, width: 1.5),
+                    ),
+                    child: Center(
+                      child: Text(
+                        _formatCurrency(nominal),
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue),
+                      ),
                     ),
                   ),
-                  onPressed: () {
-                    _saldoController.text = nominal.toStringAsFixed(0);
-                  },
                 );
-              }).toList(),
+              },
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
 
             SizedBox(
               width: double.infinity,
               height: 50,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.arrow_forward),
+                label: const Text('Lanjutkan'),
                 onPressed: () {
                   double? jumlah = double.tryParse(_saldoController.text);
                   if (jumlah != null) {
@@ -268,9 +230,8 @@ class SaldoScreen extends StatelessWidget {
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Masukkan nominal yang valid'),
+                        content: Text('Masukkan nominal yang valid.'),
                         backgroundColor: Colors.redAccent,
-                        behavior: SnackBarBehavior.floating,
                       ),
                     );
                   }
@@ -278,13 +239,9 @@ class SaldoScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 5,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                child: const Text('Lanjutkan Isi Saldo'),
               ),
             ),
           ],

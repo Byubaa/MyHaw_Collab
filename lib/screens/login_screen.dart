@@ -1,10 +1,9 @@
+// lib/screens/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:myapp/screens/register_screen.dart';
+import 'package:myapp/screens/splash_screen.dart'; // ✅ Impor SplashScreen
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart';
-
-import '../services/user_profile_service.dart';
-import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,36 +17,39 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   String? _errorMessage;
+  bool _isLoading = false;
 
-  void _login() async {
-    if (_formKey.currentState!.validate()) {
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      try {
-        final response = await Supabase.instance.client.auth
-            .signInWithPassword(email: email, password: password);
+    setState(() { _isLoading = true; _errorMessage = null; });
 
-        if (response.user != null && mounted) {
-          final profile = context.read<UserProfileService>();
-          profile.setEmail(email);
-          profile.setName(email.split('@')[0]);
+    try {
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() {
-            _errorMessage = 'Gagal login: ${e.toString()}';
-          });
-        }
+      if (!mounted) return;
+
+      if (response.user != null) {
+        // ✅ Setelah login, navigasi ke SplashScreen untuk memuat ulang state
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const SplashScreen()),
+              (route) => false,
+        );
       }
+
+    } on AuthException catch (e) {
+      if (mounted) setState(() { _errorMessage = e.message; });
+    } catch (e) {
+      if (mounted) setState(() { _errorMessage = 'Terjadi kesalahan yang tidak diketahui.'; });
+    } finally {
+      if (mounted) setState(() { _isLoading = false; });
     }
   }
 
+  // Widget build() tidak perlu diubah, biarkan seperti kode Anda yang sudah ada
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,6 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: Text(
                                 _errorMessage!,
                                 style: const TextStyle(color: Colors.red),
+                                textAlign: TextAlign.center,
                               ),
                             ),
                           TextFormField(
@@ -112,10 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               border: OutlineInputBorder(),
                             ),
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Masukkan email';
-                              }
-                              if (!value.contains('@')) {
+                              if (value == null || !value.contains('@')) {
                                 return 'Email tidak valid';
                               }
                               return null;
@@ -140,7 +140,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 24),
                           SizedBox(
                             width: double.infinity,
-                            child: ElevatedButton(
+                            child: _isLoading
+                                ? const Center(child: CircularProgressIndicator())
+                                : ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF007BFF),
                                 padding: const EdgeInsets.symmetric(vertical: 16),
